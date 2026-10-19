@@ -71,13 +71,21 @@
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .row button { flex: 1 1 140px; }
   .msg { color: var(--warn); margin: 12px 0 0; min-height: 1.4em; }
+  .facts { margin: 12px 0 16px; }
+  .facts div { margin-bottom: 6px; }
   .hidden { display: none; }
 </style>
 </head>
 <body>
 <main>
   <h1>Book your 1-to-1 supervision</h1>
-  <p>Wednesday 21 October. 1 hour, in person. We will go over your questions about the feedback and the progress of your formative proposal.</p>
+  <div class="facts">
+    <div><strong>Meeting:</strong> 1-to-1 supervision</div>
+    <div><strong>Date:</strong> Wednesday 21 October 2026</div>
+    <div><strong>Length:</strong> 1 hour</div>
+    <div><strong>Format:</strong> In person</div>
+    <div><strong>Purpose:</strong> This session is for us to go over your questions about the feedback and the progress of your formative proposal. This is the last session that we will be meeting for formative feedback.</div>
+  </div>
   <p>Please come in person, as you are on campus for class on Wednesday. If it is impossible, you can choose Teams in step 2.</p>
 
   <h2>1. Choose your name</h2>
@@ -152,9 +160,10 @@ function render() {
   if (mine) {
     box.classList.remove("hidden");
     box.innerHTML = "<span class='muted'>You are booked, " + who + ".</span><strong>Wednesday 21 October, " + label(mine.slot) + "<br>" + modeName(mine.mode) + "</strong>" +
-      "<div class='row'><button id='cancelBtn'>Cancel my booking</button></div>" +
+      "<div class='row'><button id='calBtn'>Save to calendar</button><button id='cancelBtn'>Cancel my booking</button></div>" +
       "<p class='muted' style='margin:12px 0 0'>To change your time, choose another time below.</p>";
     $("cancelBtn").onclick = cancel;
+    $("calBtn").onclick = () => saveCal(mine);
     $("pickTitle").textContent = "Change your time";
   } else {
     box.classList.add("hidden");
@@ -174,6 +183,31 @@ function render() {
     b.onclick = () => book(s);
     (parseInt(s, 10) < 13 ? m : a).appendChild(b);
   });
+}
+
+function saveCal(m) {
+  const hr = parseInt(m.slot, 10);
+  const p = (n) => String(n).padStart(2, "0");
+  const when = (n) => "20261021T" + p(n) + "0000";
+  const where = m.mode === "teams" ? "Teams (online)" : "In person";
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Supervision booking//EN", "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    "UID:supervision-" + who.replace(/[^A-Za-z]/g, "") + "-20261021@supervision-booking",
+    "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z",
+    "DTSTART:" + when(hr),
+    "DTEND:" + when(hr + 1),
+    "SUMMARY:1-to-1 supervision (" + where + ")",
+    "DESCRIPTION:" + where + ". Questions about your feedback and the progress of your formative proposal.",
+    "END:VEVENT", "END:VCALENDAR"
+  ];
+  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "supervision.ics";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 async function setMode(m) {
