@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Bookings (for Àngels)</title>
+<style>
+  body { margin: 0; font-family: Georgia, "Times New Roman", serif; background: #faf7f2; color: #2a2a2a; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 24px 0 8px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e3ddd2; border-radius: 10px; overflow: hidden; }
+  td { padding: 12px; border-bottom: 1px solid #eee8dc; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { width: 45%; color: #555; }
+  .free { color: #9a9a9a; }
+  .note { color: #6b6b6b; font-size: 0.9rem; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Wednesday 21 October</h1>
+  <p class="note">This page updates every 15 seconds.</p>
+
+  <table id="tbl"></table>
+
+  <h2>Not booked yet</h2>
+  <p id="waiting"></p>
+
+  <p><button onclick="refresh()">Refresh now</button></p>
+</main>
+<script>
+  let key = sessionStorage.getItem("adminKey") || "";
+
+  function label(s) {
+    const h = parseInt(s, 10);
+    const f = (n) => (n > 12 ? n - 12 : n) + ":00" + (n >= 12 ? "pm" : "am");
+    return f(h) + " to " + f(h + 1);
+  }
+
+  async function refresh() {
+    if (!key) {
+      key = prompt("Admin word:") || "";
+      if (!key) return;
+    }
+    const r = await fetch("/api/slots?admin=" + encodeURIComponent(key), { cache: "no-store" });
+    if (r.status === 403) {
+      sessionStorage.removeItem("adminKey");
+      key = "";
+      alert("That word is not correct.");
+      return;
+    }
+    sessionStorage.setItem("adminKey", key);
+    const d = await r.json();
+    const tbl = document.getElementById("tbl");
+    tbl.innerHTML = "";
+    d.slots.forEach((s) => {
+      const tr = document.createElement("tr");
+      const who = d.bySlot[s];
+      const text = who ? who.name + " (" + (who.mode === "teams" ? "Teams" : "in person") + ")" : "Free";
+      tr.innerHTML = "<td>" + label(s) + "</td><td class='" + (who ? "" : "free") + "'>" + text + "</td>";
+      tbl.appendChild(tr);
+    });
+    const waiting = Object.keys(d.byName).filter((n) => !d.byName[n]);
+    document.getElementById("waiting").textContent = waiting.length ? waiting.join(", ") : "Everyone has booked.";
+  }
+
+  refresh();
+  setInterval(refresh, 15000);
+</script>
+</body>
+</html>

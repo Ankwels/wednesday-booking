@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR code</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body { margin: 0; font-family: Georgia, "Times New Roman", serif; background: #fff; color: #222; text-align: center; }
+  main { max-width: 520px; margin: 0 auto; padding: 32px 16px; }
+  h1 { font-size: 1.6rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  #qr { display: inline-block; padding: 16px; background: #fff; margin: 16px 0; }
+  .url { font-size: 0.9rem; color: #555; word-break: break-all; }
+  button { font: inherit; padding: 10px 18px; border-radius: 8px; border: 1px solid #bbb; background: #f4f4f4; cursor: pointer; }
+  @media print { button { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Book your supervision</h1>
+  <p>Wednesday 21 October. Scan the code, choose your name and choose a time.</p>
+  <div id="qr"></div>
+  <p class="url" id="url"></p>
+  <button onclick="window.print()">Print or save as PDF</button>
+</main>
+<script>
+  const link = window.location.origin + "/";
+  document.getElementById("url").textContent = link;
+  new QRCode(document.getElementById("qr"), {
+    text: link, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+</body>
+</html>

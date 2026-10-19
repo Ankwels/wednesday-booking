@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book your supervision</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --card: #ffffff;
+    --ink: #2a2a2a;
+    --muted: #6b6b6b;
+    --line: #e3ddd2;
+    --accent: #1f5f5b;
+    --accent-ink: #ffffff;
+    --taken: #efebe3;
+    --warn: #9a3412;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1b1a;
+      --card: #252524;
+      --ink: #f1eee8;
+      --muted: #a9a59c;
+      --line: #3a3935;
+      --accent: #5fb3ac;
+      --accent-ink: #11201f;
+      --taken: #2e2d2a;
+      --warn: #f2a272;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.5;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 8px; line-height: 1.2; }
+  h2 { font-size: 1.1rem; margin: 28px 0 10px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .grid { display: grid; gap: 10px; }
+  .names { grid-template-columns: repeat(2, 1fr); }
+  button {
+    font: inherit;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 12px;
+    cursor: pointer;
+    text-align: center;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button.selected { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:disabled { background: var(--taken); color: var(--muted); cursor: not-allowed; }
+  .slot { display: flex; justify-content: space-between; align-items: center; text-align: left; }
+  .slot small { font-size: 0.85rem; }
+  .group-label { font-size: 0.95rem; color: var(--muted); margin: 14px 0 6px; }
+  .confirm { border-color: var(--accent); margin-top: 16px; }
+  .confirm strong { display: block; font-size: 1.15rem; margin: 4px 0 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row button { flex: 1 1 140px; }
+  .msg { color: var(--warn); margin: 12px 0 0; min-height: 1.4em; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Book your 1-to-1 supervision</h1>
+  <p>Wednesday 21 October. 1 hour, in person. We will go over your questions about the feedback and the progress of your formative proposal.</p>
+  <p>Please come in person, as you are on campus for class on Wednesday. If it is impossible, you can choose Teams in step 2.</p>
+
+  <h2>1. Choose your name</h2>
+  <div id="names" class="grid names"></div>
+
+  <div id="step2" class="hidden">
+    <div id="mine" class="card confirm hidden"></div>
+
+    <h2 id="modeTitle">2. Meeting type</h2>
+    <p style="margin-bottom:6px"><strong>In person</strong> is the default for everyone.</p>
+    <label id="modes" class="muted" style="display:flex; gap:10px; align-items:flex-start; cursor:pointer;">
+      <input type="checkbox" id="teamsBox" style="margin-top:5px; width:18px; height:18px;">
+      <span>It is impossible for me to come in person. I will join on Teams instead.</span>
+    </label>
+
+    <h2 id="pickTitle">3. Choose a time</h2>
+    <p class="muted">1:00pm to 5:00pm is your usual class time on Wednesday. The 11:00am and 12:00pm slots are two extra hours in the morning, in case they suit you better.</p>
+
+    <div class="group-label">Extra morning times</div>
+    <div id="morning" class="grid"></div>
+
+    <div class="group-label">Usual class time</div>
+    <div id="afternoon" class="grid"></div>
+
+    <p id="msg" class="msg" role="status"></p>
+  </div>
+</main>
+
+<script>
+const api = "/api/slots";
+let names = [], slots = [], taken = {}, mine = null, who = null, mode = "in-person";
+const modeName = (m) => (m === "teams" ? "Teams (online)" : "In person");
+
+const $ = (id) => document.getElementById(id);
+
+function label(s) {
+  const h = parseInt(s, 10);
+  const f = (n) => {
+    const hh = n > 12 ? n - 12 : n;
+    return hh + ":00" + (n >= 12 ? "pm" : "am");
+  };
+  return f(h) + " to " + f(h + 1);
+}
+
+async function load() {
+  const q = who ? "?name=" + encodeURIComponent(who) : "";
+  const r = await fetch(api + q, { cache: "no-store" });
+  const d = await r.json();
+  names = d.names; slots = d.slots; taken = d.taken; mine = d.mine;
+  render();
+}
+
+function render() {
+  const nb = $("names");
+  nb.innerHTML = "";
+  names.forEach((n) => {
+    const b = document.createElement("button");
+    b.textContent = n;
+    if (n === who) b.classList.add("selected");
+    b.onclick = () => { who = n; mode = "in-person"; $("msg").textContent = ""; load(); };
+    nb.appendChild(b);
+  });
+
+  $("step2").classList.toggle("hidden", !who);
+  if (!who) return;
+
+  if (mine) mode = mine.mode;
+  $("teamsBox").checked = mode === "teams";
+  $("teamsBox").onchange = (e) => setMode(e.target.checked ? "teams" : "in-person");
+
+  const box = $("mine");
+  if (mine) {
+    box.classList.remove("hidden");
+    box.innerHTML = "<span class='muted'>You are booked, " + who + ".</span><strong>Wednesday 21 October, " + label(mine.slot) + "<br>" + modeName(mine.mode) + "</strong>" +
+      "<div class='row'><button id='cancelBtn'>Cancel my booking</button></div>" +
+      "<p class='muted' style='margin:12px 0 0'>To change your time, choose another time below.</p>";
+    $("cancelBtn").onclick = cancel;
+    $("pickTitle").textContent = "Change your time";
+  } else {
+    box.classList.add("hidden");
+    $("pickTitle").textContent = "3. Choose a time";
+  }
+
+  const m = $("morning"), a = $("afternoon");
+  m.innerHTML = ""; a.innerHTML = "";
+  slots.forEach((s) => {
+    const b = document.createElement("button");
+    b.className = "slot";
+    const isMine = !!mine && s === mine.slot;
+    const isTaken = taken[s] && !isMine;
+    b.innerHTML = "<span>" + label(s) + "</span><small>" + (isMine ? "Your time" : isTaken ? "Taken" : "Free") + "</small>";
+    if (isMine) b.classList.add("selected");
+    b.disabled = isTaken;
+    b.onclick = () => book(s);
+    (parseInt(s, 10) < 13 ? m : a).appendChild(b);
+  });
+}
+
+async function setMode(m) {
+  mode = m;
+  if (mine) {
+    await fetch(api, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "mode", name: who, mode: m }),
+    });
+    await load();
+  } else {
+    render();
+  }
+}
+
+async function book(s) {
+  if (!mode) {
+    $("msg").textContent = "Please choose In person or Teams first.";
+    $("modes").scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  const r = await fetch(api, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "book", name: who, slot: s, mode }),
+  });
+  if (r.status === 409) {
+    await load();
+    $("msg").textContent = "Someone just took that time. Please choose another time.";
+    return;
+  }
+  if (!r.ok) {
+    $("msg").textContent = "Something went wrong. Please try again.";
+    return;
+  }
+  $("msg").textContent = "";
+  await load();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function cancel() {
+  await fetch(api, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "cancel", name: who }),
+  });
+  await load();
+}
+
+load();
+setInterval(load, 20000);
+</script>
+</body>
+</html>
