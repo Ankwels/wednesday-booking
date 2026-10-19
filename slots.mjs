@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 
-const SLOTS = ["11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+const SLOTS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
 const NAMES = ["Francisco", "Daniel", "Claus", "Bochra", "Konstantinos", "Rosland", "Angels"];
 const MODES = ["in-person", "teams"];
 // The admin word is set in Netlify as the ADMIN_KEY environment variable.
