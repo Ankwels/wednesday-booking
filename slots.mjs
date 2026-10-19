@@ -1,7 +1,7 @@
 import { getStore } from "@netlify/blobs";
 
 const SLOTS = ["11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
-const NAMES = ["Francisco", "Daniel", "Claus", "Bochra", "Konstantinos", "Rosland", "Angels (test)"];
+const NAMES = ["Francisco", "Daniel", "Claus", "Bochra", "Konstantinos", "Rosland", "Angels"];
 const MODES = ["in-person", "teams"];
 // The admin word is set in Netlify as the ADMIN_KEY environment variable.
 const ADMIN_KEY = process.env.ADMIN_KEY;
@@ -28,7 +28,7 @@ async function readState(store) {
 }
 
 const handle = async (req) => {
-  const store = getStore({ name: "bookings-v2", consistency: "strong" });
+  const store = getStore({ name: "bookings-v3", consistency: "strong" });
   const url = new URL(req.url);
 
   if (req.method === "GET") {
