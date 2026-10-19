@@ -207,7 +207,9 @@ async function book(s) {
     return;
   }
   if (!r.ok) {
-    $("msg").textContent = "Something went wrong. Please try again.";
+    let why = "";
+    try { why = (await r.json()).error || ""; } catch (e) {}
+    $("msg").textContent = "Something went wrong. Please try again." + (why ? " (" + why + ")" : "");
     return;
   }
   $("msg").textContent = "";
