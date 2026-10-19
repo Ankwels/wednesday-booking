@@ -1,7 +1,7 @@
 import { getStore } from "@netlify/blobs";
 
 const SLOTS = ["11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
-const NAMES = ["Francisco", "Daniel", "Klaus", "Bochra", "Konstantinos", "Rosland"];
+const NAMES = ["Francisco", "Daniel", "Claus", "Bochra", "Konstantinos", "Rosland", "Angels (test)"];
 const MODES = ["in-person", "teams"];
 // The admin word is set in Netlify as the ADMIN_KEY environment variable.
 const ADMIN_KEY = process.env.ADMIN_KEY;
@@ -27,7 +27,7 @@ async function readState(store) {
   return { bySlot, byName };
 }
 
-export default async (req) => {
+const handle = async (req) => {
   const store = getStore({ name: "bookings-v2", consistency: "strong" });
   const url = new URL(req.url);
 
@@ -75,7 +75,7 @@ export default async (req) => {
         return json({ ok: true });
       }
       const result = await store.set(`slot:${slot}`, JSON.stringify({ name, mode }), { onlyIfNew: true });
-      if (!result.modified) return json({ error: "taken" }, 409);
+      if (result && result.modified === false) return json({ error: "taken" }, 409);
       if (current) await store.delete(`slot:${current.slot}`);
       await store.set(`name:${name}`, JSON.stringify({ slot, mode }));
       return json({ ok: true });
@@ -83,6 +83,14 @@ export default async (req) => {
   }
 
   return json({ error: "Not allowed" }, 405);
+};
+
+export default async (req) => {
+  try {
+    return await handle(req);
+  } catch (e) {
+    return json({ error: String((e && e.message) || e) }, 500);
+  }
 };
 
 export const config = { path: "/api/slots" };
